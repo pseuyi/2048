@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
+module Main exposing (Game, Msg(..), init, main, subscriptions, update, view)
 
 import Browser
 import Html exposing (Html, button, div, text)
@@ -23,12 +23,12 @@ main =
 -- MODEL
 
 
-type alias Model =
+type alias Game =
     { grid : List Int
     }
 
 
-init : () -> ( Model, Cmd Msg )
+init : () -> ( Game, Cmd Msg )
 init _ =
     ( { grid =
             [ 0
@@ -58,16 +58,15 @@ init _ =
 
 
 type Msg
-    = Expand
-    | Collapse
+    = Start
 
 
 
 -- VIEW
 
 
-view : Model -> Html Msg
-view model =
+view : Game -> Html Msg
+view game =
     div
         [ style "background-color" "#5ad455"
         , style "height" "444px"
@@ -89,39 +88,18 @@ view model =
                     ]
                     [ text <| String.fromInt value ]
             )
-            model.grid
+            game.grid
         )
 
 
 
--- div
---     [ style "background-color" "#5ad455"
---     , style "height" "800px"
---     , style "width" "800px"
---     ]
---     [ if model then
---         div
---             []
---             [ button [ onClick Collapse ] [ text "Collapse" ]
---             , text "Widget"
---             , text <| .name dog
---             ]
---
---       else
---         div
---             []
---             [ button [ onClick Expand ] [ text "Expand" ] ]
---     ]
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Msg -> Game -> ( Game, Cmd Msg )
+update msg game =
     case msg of
-        Expand ->
-            ( { grid = [] }, Cmd.none )
-
-        Collapse ->
+        Start ->
             ( { grid = [] }, Cmd.none )
 
 
@@ -129,6 +107,15 @@ update msg model =
 -- SUBSCRIPTIONS
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions : Game -> Sub Msg
+subscriptions game =
     Sub.none
+
+
+
+-- HELPERS
+
+
+spawnBlock : Game -> Game
+spawnBlock game =
+    game
