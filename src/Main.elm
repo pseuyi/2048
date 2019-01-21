@@ -1,7 +1,8 @@
 module Main exposing (Game, Msg(..), init, main, subscriptions, update, view)
 
+import Array
 import Browser
-import Html exposing (Html, button, div, text)
+import Html exposing (Html, button, div, h1, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 import Random
@@ -24,8 +25,13 @@ main =
 -- MODEL
 
 
+type alias Grid =
+    List Int
+
+
 type alias Game =
-    { grid : List Int
+    { grid : Grid
+    , spawn : Int
     }
 
 
@@ -33,6 +39,10 @@ type alias Block =
     { index : Int
     , value : Int
     }
+
+
+type alias Blocks =
+    List Block
 
 
 init : () -> ( Game, Cmd Msg )
@@ -55,6 +65,7 @@ init _ =
             , 0
             , 0
             ]
+      , spawn = 1
       }
     , Cmd.none
     )
@@ -65,8 +76,10 @@ init _ =
 
 
 type Msg
-    = Start
-    | NewBlock Int
+    = Init
+    | NewGame Blocks
+    | Spawn
+    | NewBlock Block
 
 
 
@@ -77,30 +90,42 @@ view : Game -> Html Msg
 view game =
     div
         []
-        [ div
-            [ style "background-color" "#5ad455"
+        [ h1 [] [ text "elm 2048" ]
+        , button [ onClick Init ] [ text "new game" ]
+        , button [ onClick Spawn ] [ text "generate random spawn" ]
+        , div [] [ text (String.fromInt game.spawn) ]
+        , div
+            [ style "background-color" "#5ada55"
             , style "height" "444px"
             , style "width" "444px"
             , style "display" "grid"
             , style "grid-gap" "4px"
             , style "grid-template-columns" "repeat(4, 1fr)"
             , style "border-radius" "4px"
+            , style "border" "1px solid black"
             ]
             (List.map
                 (\value ->
                     div
-                        [ style "background-color" "azure"
+                        [ style "background-color" "seashell"
                         , style "height" "100px"
                         , style "width" "100px"
-                        , style "border" "4px solid azure"
+                        , style "border" "4px solid seashell"
                         , style "color" "black"
                         , style "border-radius" "4px"
+                        , style "font-size" "88px"
+                        , style "text-align" "center"
                         ]
-                        [ text <| String.fromInt value ]
+                        [ text <|
+                            if value > 0 then
+                                String.fromInt value
+
+                            else
+                                ""
+                        ]
                 )
                 game.grid
             )
-        , button [ onClick Start ] [ text "click" ]
         ]
 
 
@@ -111,11 +136,19 @@ view game =
 update : Msg -> Game -> ( Game, Cmd Msg )
 update msg game =
     case msg of
-        Start ->
-            ( { game | grid = [ 1, 2, 3, 4 ] }, Cmd.none )
+        Init ->
+            ( game, initGame )
 
-        NewBlock index ->
-            ( game, Cmd.none )
+        Spawn ->
+            ( game, spawnBlock )
+
+        NewGame blocks ->
+            ( { game | grid = addBlocksToGrid game.grid blocks }
+            , Cmd.none
+            )
+
+        NewBlock block ->
+            ( { game | spawn = block.index }, Cmd.none )
 
 
 
@@ -129,18 +162,94 @@ subscriptions game =
 
 
 -- HELPERS
+-- newGame : Cmd msg
+-- newGame =
+--     Random.generate NewGame gridWithTwoBlocks
+-- gridWithTwoBlocks : Random.Generator List
+-- initGame : Cmd Msg
+-- initGame =
+--     Random.generate NewGame spawnTwoBlocks
 
 
-oneToTen : Random.Generator Int
-oneToTen =
-    Random.int 1 10
+initGame : Cmd Msg
+initGame =
+    Random.generate NewGame initialBlocks
 
 
-spawnBlock : Game -> Cmd Msg
-spawnBlock game =
-    Random.generate NewBlock oneToTen
+
+-- spawnTwoBlocks : Random.Generator ( Int, Int )
+-- spawnTwoBlocks =
+--     Random.pair twoOrFour twoOrFour
+
+
+initialBlocks : Random.Generator Blocks
+initialBlocks =
+    Random.list 2 generateBlock
+
+
+spawnBlock : Cmd Msg
+spawnBlock =
+    Random.generate NewBlock generateBlock
+
+
+twoOrFour : Random.Generator Int
+twoOrFour =
+    Random.map
+        (\prob ->
+            if prob < 0.5 then
+                2
+
+            else
+                4
+        )
+        (Random.float
+            0
+            1
+        )
 
 
 checkBlockEmpty : Block -> Bool
 checkBlockEmpty block =
     block.value == 0
+
+
+flatten2D : List (List a) -> List a
+flatten2D list =
+    List.foldr (++) [] list
+
+
+
+--
+-- addBlockToGrid : Grid -> Block -> Grid
+-- addBlockToGrid grid block =
+--     let
+--         updateBlock curr =
+--             if curr.index == block.index then
+--                 { curr | value = block.value }
+--
+--             else
+--                 curr
+--     in
+--     List.map updateBlock grid
+
+
+generateBlock : Random.Generator Block
+generateBlock =
+    Random.map2
+        (\idx val -> Block idx val)
+        generateIndex
+        twoOrFour
+
+
+generateIndex : Random.Generator Int
+generateIndex =
+    Random.int 0 15
+
+
+addBlocksToGrid : Grid -> List Block -> Grid
+addBlocksToGrid grid blocks =
+    let
+        flatGrid =
+            Array.fromList grid
+    in
+    Array.toList (List.foldr (\b acc -> Array.set b.index b.value acc) flatGrid blocks)
