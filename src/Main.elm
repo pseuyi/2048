@@ -2,9 +2,11 @@ module Main exposing (Game, Msg(..), init, main, subscriptions, update, view)
 
 import Array
 import Browser
+import Browser.Events
 import Html exposing (Html, button, div, h1, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode
 import Random
 
 
@@ -32,6 +34,7 @@ type alias Grid =
 type alias Game =
     { grid : Grid
     , spawn : Int
+    , direction : Direction
     }
 
 
@@ -43,6 +46,38 @@ type alias Block =
 
 type alias Blocks =
     List Block
+
+
+type Direction
+    = Left
+    | Down
+    | Right
+    | Up
+    | None
+
+
+keyDecoder : Decode.Decoder Direction
+keyDecoder =
+    Decode.map toDirection (Decode.field "key" Decode.string)
+
+
+toDirection : String -> Direction
+toDirection string =
+    case string of
+        "ArrowLeft" ->
+            Left
+
+        "ArrowDown" ->
+            Down
+
+        "ArrowRight" ->
+            Right
+
+        "ArrowUp" ->
+            Up
+
+        _ ->
+            None
 
 
 init : () -> ( Game, Cmd Msg )
@@ -66,6 +101,7 @@ init _ =
             , 0
             ]
       , spawn = 1
+      , direction = Up
       }
     , Cmd.none
     )
@@ -80,6 +116,7 @@ type Msg
     | NewGame Blocks
     | Spawn
     | NewBlock Block
+    | ChangeDirection Direction
 
 
 
@@ -94,6 +131,7 @@ view game =
         , button [ onClick Init ] [ text "new game" ]
         , button [ onClick Spawn ] [ text "generate random spawn" ]
         , div [] [ text (String.fromInt game.spawn) ]
+        , div [] [ text (printDirection game.direction) ]
         , div
             [ style "background-color" "#5ada55"
             , style "height" "444px"
@@ -150,14 +188,17 @@ update msg game =
         NewBlock block ->
             ( { game | spawn = block.index }, Cmd.none )
 
+        ChangeDirection direction ->
+            ( { game | direction = direction }, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
 
 
 subscriptions : Game -> Sub Msg
-subscriptions game =
-    Sub.none
+subscriptions _ =
+    Browser.Events.onKeyDown (Decode.map ChangeDirection keyDecoder)
 
 
 
@@ -253,3 +294,22 @@ addBlocksToGrid grid blocks =
             Array.fromList grid
     in
     Array.toList (List.foldr (\b acc -> Array.set b.index b.value acc) flatGrid blocks)
+
+
+printDirection : Direction -> String
+printDirection dir =
+    case dir of
+        Left ->
+            "Left"
+
+        Down ->
+            "Down"
+
+        Right ->
+            "Right"
+
+        Up ->
+            "Up"
+
+        None ->
+            "None"
