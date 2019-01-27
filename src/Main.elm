@@ -189,7 +189,12 @@ update msg game =
             ( { game | spawn = block.index }, Cmd.none )
 
         ChangeDirection direction ->
-            ( { game | direction = direction }, Cmd.none )
+            ( { game
+                | direction = direction
+                , grid = collapse game.grid
+              }
+            , Cmd.none
+            )
 
 
 
@@ -313,3 +318,83 @@ printDirection dir =
 
         None ->
             "None"
+
+
+
+-- updateGrid : Grid -> Direction -> Grid
+-- updateGrid grid dir =
+--     let
+--      cols = range 0 3
+--     in
+--       updateColumns grid cols
+--
+-- updateColumns : Grid -> List Int -> Grid
+-- updateColumns grid cols =
+--     let
+--       flatGrid = Array.fromList grid
+--       firstCol = List.map (\n -> n * 4) cols
+--
+--     in
+--       Array.toList (List.foldr (\idx acc -> if Array.set idx v grid) grid rows)
+-- moveBlocks : Int -> List Int -> List int
+-- moveBlocks idx list =
+
+
+dbl : Int -> Int
+dbl n =
+    n * 2
+
+
+padZeroes : List Int -> List Int
+padZeroes list =
+    list ++ [ 0, 0, 0, 0 ]
+
+
+compact : List Int -> List Int
+compact list =
+    List.filter ((/=) 0) list
+
+
+collapse : Grid -> Grid
+collapse grid =
+    let
+        -- grab first four ( a row)
+        slice =
+            grid
+                |> List.take 4
+                |> compact
+                |> padZeroes
+                |> List.take 4
+    in
+    -- recursively collapse grid
+    if List.length grid > 4 then
+        List.append (collapseSlice slice) (collapse (List.drop 4 grid))
+
+    else
+        collapseSlice slice
+
+
+collapseSlice : List Int -> List Int
+collapseSlice slice =
+    case slice of
+        a :: b :: c :: d :: rest ->
+            if a == b && c == d then
+                [ dbl a, dbl c, 0, 0 ]
+
+            else if a == b then
+                [ dbl a, c, d, 0 ]
+
+            else if b == c then
+                [ a, dbl b, 0, 0 ]
+
+            else if c == d then
+                [ a, b, dbl c, 0 ]
+
+            else
+                slice
+
+        [] ->
+            []
+
+        _ ->
+            []
