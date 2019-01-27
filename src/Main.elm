@@ -398,3 +398,16 @@ collapseSlice slice =
 
         _ ->
             []
+
+
+transformToMatrix : List Int -> List (List Int)
+transformToMatrix list =
+    let
+        row =
+            List.take 4 list
+    in
+    if List.length list > 4 then
+        List.append (List.singleton row) (transformToMatrix List.drop 4 list)
+
+    else
+        List.append (List.singleton row)
