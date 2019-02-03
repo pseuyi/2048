@@ -1,6 +1,6 @@
 module Main exposing (Game, Msg(..), init, main, subscriptions, update, view)
 
-import Array
+import Array exposing (..)
 import Browser
 import Browser.Events
 import Html exposing (Html, button, div, h1, text)
@@ -406,8 +406,35 @@ transformToMatrix list =
         row =
             List.take 4 list
     in
+    --recursively append lists of length 4
     if List.length list > 4 then
-        List.append (List.singleton row) (transformToMatrix List.drop 4 list)
+        List.append (List.singleton row) (transformToMatrix (List.drop 4 list))
 
     else
-        List.append (List.singleton row)
+        List.append (List.singleton row) (List.singleton list)
+
+
+
+-- transformRowsToArray : List (List Int) -> List (Array Int)
+-- transformRowsToArray list =
+--     List.map (\r -> Array.fromList r) list
+
+
+transformGridTo2DArray : List Int -> Array (Array Int)
+transformGridTo2DArray list =
+    Array.fromList (List.map (\r -> Array.fromList r) list)
+
+
+rotateMatrixRight : Array (Array Int) -> Array (Array Int)
+rotateMatrixRight matrix =
+    Array.indexedMap (\idx row -> reverseArray (getColumn idx matrix)) matrix
+
+
+getColumn : Int -> Array (Array Int) -> Array Int
+getColumn num matrix =
+    Array.map (\row -> Array.get num row) matrix
+
+
+reverseArray : Array Int -> Array Int
+reverseArray arr =
+    Array.foldl (::) [] arr
