@@ -56,6 +56,12 @@ type Direction
     | None
 
 
+type Status
+    = InProgress
+    | Success
+    | Failure
+
+
 keyDecoder : Decode.Decoder Direction
 keyDecoder =
     Decode.map toDirection (Decode.field "key" Decode.string)
@@ -145,14 +151,15 @@ view game =
             (List.map
                 (\value ->
                     div
-                        [ style "background-color" "seashell"
+                        [ style "background-color" "white"
                         , style "height" "100px"
                         , style "width" "100px"
-                        , style "border" "4px solid seashell"
+                        , style "border" "4px solid white"
                         , style "color" "black"
                         , style "border-radius" "4px"
-                        , style "font-size" "88px"
+                        , style "font-size" "44px"
                         , style "text-align" "center"
+                        , style "line-height" "100px"
                         ]
                         [ text <|
                             if value > 0 then
