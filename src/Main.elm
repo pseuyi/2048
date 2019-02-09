@@ -299,9 +299,9 @@ generateIndex =
     Random.int 0 15
 
 
-isZero : a -> Bool
-isZero a =
-    case a of
+isZero : Int -> Bool
+isZero v =
+    case v of
         0 ->
             True
 
@@ -319,19 +319,14 @@ addBlocksToGrid grid blocks =
             List.length (List.filter isZero grid)
 
         normalizedBlocks =
-            List.map normalizeBlock blocks
+            List.map (\b -> { b | index = modBy availableSpaces b.index }) blocks
     in
     if availableSpaces == 0 then
         --game is over
         grid
 
     else
-        Array.toList (List.foldr insertBlock flatGrid blocks)
-
-
-normalizeBlock : Block -> Block
-normalizeBlock b =
-    { b | index = modBy availableSpaces b.index }
+        Array.toList (List.foldr insertBlock flatGrid normalizedBlocks)
 
 
 insertBlock : Block -> Array Int -> Array Int
