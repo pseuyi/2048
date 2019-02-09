@@ -299,13 +299,51 @@ generateIndex =
     Random.int 0 15
 
 
+isZero : a -> Bool
+isZero a =
+    case a of
+        0 ->
+            True
+
+        _ ->
+            False
+
+
 addBlocksToGrid : Grid -> List Block -> Grid
 addBlocksToGrid grid blocks =
     let
         flatGrid =
             Array.fromList grid
+
+        availableSpaces =
+            List.length (List.filter isZero grid)
+
+        normalizedBlocks =
+            List.map normalizeBlock blocks
     in
-    Array.toList (List.foldr (\b acc -> Array.set b.index b.value acc) flatGrid blocks)
+    if availableSpaces == 0 then
+        --game is over
+        grid
+
+    else
+        Array.toList (List.foldr insertBlock flatGrid blocks)
+
+
+normalizeBlock : Block -> Block
+normalizeBlock b =
+    { b | index = modBy availableSpaces b.index }
+
+
+insertBlock : Block -> Array Int -> Array Int
+insertBlock b acc =
+    if b.index > 15 || b.index < 0 then
+        acc
+
+    else if Maybe.withDefault 1 (Array.get b.index acc) > 0 then
+        insertBlock (Block (b.index + 1) b.value) acc
+
+    else
+        Array.set b.index b.value acc
 
 
 printDirection : Direction -> String
