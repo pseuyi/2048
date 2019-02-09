@@ -33,7 +33,7 @@ type alias Grid =
 
 type alias Game =
     { grid : Grid
-    , spawn : Int
+    , spawn : Int -- TODO del
     , direction : Direction
     }
 
@@ -186,14 +186,14 @@ update msg game =
             )
 
         NewBlock block ->
-            ( { game | spawn = block.index }, Cmd.none )
+            ( { game | grid = addBlocksToGrid game.grid (List.singleton block) }, Cmd.none )
 
         ChangeDirection direction ->
             ( { game
                 | direction = direction
-                , grid = collapse game.grid
+                , grid = collapse game.grid direction
               }
-            , Cmd.none
+            , spawnBlock
             )
 
 
@@ -355,8 +355,67 @@ compact list =
     List.filter ((/=) 0) list
 
 
-collapse : Grid -> Grid
-collapse grid =
+collapse : Grid -> Direction -> Grid
+collapse grid dir =
+    case dir of
+        Right ->
+            grid
+                |> transformToMatrix
+                |> transformGridTo2DArray
+                |> rotateMatrixRight
+                |> rotateMatrixRight
+                |> transform2DArrayToGrid
+                |> flatten2D
+                |> collapseGrid
+                |> transformToMatrix
+                |> transformGridTo2DArray
+                |> rotateMatrixRight
+                |> rotateMatrixRight
+                |> transform2DArrayToGrid
+                |> flatten2D
+
+        Left ->
+            grid
+                |> collapseGrid
+
+        Down ->
+            grid
+                |> transformToMatrix
+                |> transformGridTo2DArray
+                |> rotateMatrixRight
+                |> transform2DArrayToGrid
+                |> flatten2D
+                |> collapseGrid
+                |> transformToMatrix
+                |> transformGridTo2DArray
+                |> rotateMatrixRight
+                |> rotateMatrixRight
+                |> rotateMatrixRight
+                |> transform2DArrayToGrid
+                |> flatten2D
+
+        Up ->
+            grid
+                |> transformToMatrix
+                |> transformGridTo2DArray
+                |> rotateMatrixRight
+                |> rotateMatrixRight
+                |> rotateMatrixRight
+                |> transform2DArrayToGrid
+                |> flatten2D
+                |> collapseGrid
+                |> transformToMatrix
+                |> transformGridTo2DArray
+                |> rotateMatrixRight
+                |> transform2DArrayToGrid
+                |> flatten2D
+
+        _ ->
+            grid
+
+
+collapseGrid : Grid -> Grid
+collapseGrid grid =
     let
         -- grab first four ( a row)
         slice =
@@ -368,10 +427,24 @@ collapse grid =
     in
     -- recursively collapse grid
     if List.length grid > 4 then
-        List.append (collapseSlice slice) (collapse (List.drop 4 grid))
+        List.append (collapseSlice slice) (collapseGrid (List.drop 4 grid))
 
     else
         collapseSlice slice
+
+
+
+-- |> transformToMatrix
+-- |> flatten2D
+-- if dir == Up then
+--     matrix
+--         |> List.map (\slice -> collapseSlice slice)
+--         |> transformGridTo2DArray
+--         |> rotateMatrixRight
+--         |> transform2DArrayToGrid
+--         |> flatten2D
+--
+-- else
 
 
 collapseSlice : List Int -> List Int
@@ -411,7 +484,7 @@ transformToMatrix list =
         List.append (List.singleton row) (transformToMatrix (List.drop 4 list))
 
     else
-        List.append (List.singleton row) (List.singleton list)
+        List.singleton row
 
 
 
@@ -420,7 +493,12 @@ transformToMatrix list =
 --     List.map (\r -> Array.fromList r) list
 
 
-transformGridTo2DArray : List Int -> Array (Array Int)
+transform2DArrayToGrid : Array (Array Int) -> List (List Int)
+transform2DArrayToGrid arr =
+    Array.toList (Array.map (\r -> Array.toList r) arr)
+
+
+transformGridTo2DArray : List (List Int) -> Array (Array Int)
 transformGridTo2DArray list =
     Array.fromList (List.map (\r -> Array.fromList r) list)
 
@@ -432,9 +510,9 @@ rotateMatrixRight matrix =
 
 getColumn : Int -> Array (Array Int) -> Array Int
 getColumn num matrix =
-    Array.map (\row -> Array.get num row) matrix
+    Array.map (\row -> Maybe.withDefault 0 (Array.get num row)) matrix
 
 
 reverseArray : Array Int -> Array Int
 reverseArray arr =
-    Array.foldl (::) [] arr
+    Array.fromList (Array.foldl (::) [] arr)
