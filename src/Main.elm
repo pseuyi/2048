@@ -108,8 +108,10 @@ type Msg
 view : Game -> Html Msg
 view game =
     div
-        []
-        [ h1 [] [ text "popular game 2048 written in elm" ]
+        [ style "width" "464px"
+        , style "margin" " auto"
+        ]
+        [ h1 [] [ text "viral game 2048 rewritten in elm" ]
         , button
             [ onClick Init
             , style "margin-bottom" "1em"
@@ -131,7 +133,7 @@ view game =
                         ""
             ]
         , div
-            [ style "background-color" "#5ada55"
+            [ style "background-color" "navajowhite"
             , style "height" "444px"
             , style "width" "444px"
             , style "display" "grid"
