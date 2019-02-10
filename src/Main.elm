@@ -3,7 +3,7 @@ module Main exposing (Game, Msg(..), init, main, subscriptions, update, view)
 import Array exposing (..)
 import Browser
 import Browser.Events
-import Html exposing (Html, button, div, h1, text)
+import Html exposing (Html, button, div, h1, h2, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
@@ -29,8 +29,8 @@ main =
 
 type alias Game =
     { grid : Grid
-    , spawn : Int -- TODO del
     , direction : Direction
+    , status : Status
     }
 
 
@@ -60,6 +60,7 @@ type Status
     = InProgress
     | Success
     | Failure
+    | None
 
 
 init : () -> ( Game, Cmd Msg )
@@ -82,8 +83,8 @@ init _ =
             , 0
             , 0
             ]
-      , spawn = 1
       , direction = Up
+      , status = None
       }
     , Cmd.none
     )
@@ -96,7 +97,6 @@ init _ =
 type Msg
     = Init
     | NewGame Blocks
-    | Spawn
     | NewBlock Block
     | ChangeDirection Direction
 
@@ -109,11 +109,27 @@ view : Game -> Html Msg
 view game =
     div
         []
-        [ h1 [] [ text "elm 2048" ]
-        , button [ onClick Init ] [ text "new game" ]
-        , button [ onClick Spawn ] [ text "generate random spawn" ]
-        , div [] [ text (String.fromInt game.spawn) ]
-        , div [] [ text (printDirection game.direction) ]
+        [ h1 [] [ text "popular game 2048 written in elm" ]
+        , button
+            [ onClick Init
+            , style "margin-bottom" "1em"
+            ]
+            [ text "new game" ]
+        , h2 []
+            [ text <|
+                case game.status of
+                    InProgress ->
+                        ""
+
+                    Success ->
+                        "you won!"
+
+                    Failure ->
+                        "no more moves."
+
+                    None ->
+                        ""
+            ]
         , div
             [ style "background-color" "#5ada55"
             , style "height" "444px"
@@ -177,14 +193,11 @@ update msg game =
                     , 0
                     , 0
                     ]
-                , spawn = 1
                 , direction = Up
+                , status = InProgress
               }
             , initGame
             )
-
-        Spawn ->
-            ( game, spawnBlock )
 
         NewGame blocks ->
             ( { game | grid = addBlocksToGrid game.grid blocks }
@@ -195,8 +208,27 @@ update msg game =
             ( { game | grid = addBlocksToGrid game.grid (List.singleton block) }, Cmd.none )
 
         ChangeDirection direction ->
-            if direction == Invalid then
+            let
+                availableSpaces =
+                    List.length (List.filter isZero game.grid)
+
+                createdWinningBlock =
+                    List.any (\v -> v == 2048) game.grid
+            in
+            if direction == Invalid || game.status == None || game.status == Failure then
                 ( game, Cmd.none )
+
+            else if availableSpaces == 0 then
+                ( { game | status = Failure }, Cmd.none )
+
+            else if createdWinningBlock == True then
+                ( { game
+                    | direction = direction
+                    , grid = collapse game.grid direction
+                    , status = Success
+                  }
+                , spawnBlock
+                )
 
             else
                 ( { game
@@ -244,25 +276,9 @@ toDirection string =
             Invalid
 
 
-
--- newGame : Cmd msg
--- newGame =
---     Random.generate NewGame gridWithTwoBlocks
--- gridWithTwoBlocks : Random.Generator List
--- initGame : Cmd Msg
--- initGame =
---     Random.generate NewGame spawnTwoBlocks
-
-
 initGame : Cmd Msg
 initGame =
     Random.generate NewGame initialBlocks
-
-
-
--- spawnTwoBlocks : Random.Generator ( Int, Int )
--- spawnTwoBlocks =
---     Random.pair twoOrFour twoOrFour
 
 
 initialBlocks : Random.Generator Blocks
@@ -301,21 +317,6 @@ flatten2D list =
     List.foldr (++) [] list
 
 
-
---
--- addBlockToGrid : Grid -> Block -> Grid
--- addBlockToGrid grid block =
---     let
---         updateBlock curr =
---             if curr.index == block.index then
---                 { curr | value = block.value }
---
---             else
---                 curr
---     in
---     List.map updateBlock grid
-
-
 generateBlock : Random.Generator Block
 generateBlock =
     Random.map2
@@ -351,12 +352,7 @@ addBlocksToGrid grid blocks =
         normalizedBlocks =
             List.map (\b -> { b | index = modBy availableSpaces b.index }) blocks
     in
-    if availableSpaces == 0 then
-        --game is over
-        grid
-
-    else
-        Array.toList (List.foldr insertBlock flatGrid normalizedBlocks)
+    Array.toList (List.foldr insertBlock flatGrid normalizedBlocks)
 
 
 insertBlock : Block -> Array Int -> Array Int
@@ -388,26 +384,6 @@ printDirection dir =
 
         Invalid ->
             "Invalid"
-
-
-
--- updateGrid : Grid -> Direction -> Grid
--- updateGrid grid dir =
---     let
---      cols = range 0 3
---     in
---       updateColumns grid cols
---
--- updateColumns : Grid -> List Int -> Grid
--- updateColumns grid cols =
---     let
---       flatGrid = Array.fromList grid
---       firstCol = List.map (\n -> n * 4) cols
---
---     in
---       Array.toList (List.foldr (\idx acc -> if Array.set idx v grid) grid rows)
--- moveBlocks : Int -> List Int -> List int
--- moveBlocks idx list =
 
 
 dbl : Int -> Int
@@ -503,20 +479,6 @@ collapseGrid grid =
         collapseSlice slice
 
 
-
--- |> transformToMatrix
--- |> flatten2D
--- if dir == Up then
---     matrix
---         |> List.map (\slice -> collapseSlice slice)
---         |> transformGridTo2DArray
---         |> rotateMatrixRight
---         |> transform2DArrayToGrid
---         |> flatten2D
---
--- else
-
-
 collapseSlice : List Int -> List Int
 collapseSlice slice =
     case slice of
@@ -555,12 +517,6 @@ transformToMatrix list =
 
     else
         List.singleton row
-
-
-
--- transformRowsToArray : List (List Int) -> List (Array Int)
--- transformRowsToArray list =
---     List.map (\r -> Array.fromList r) list
 
 
 transform2DArrayToGrid : Array (Array Int) -> List (List Int)
