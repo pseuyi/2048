@@ -27,15 +27,15 @@ main =
 -- MODEL
 
 
-type alias Grid =
-    List Int
-
-
 type alias Game =
     { grid : Grid
     , spawn : Int -- TODO del
     , direction : Direction
     }
+
+
+type alias Grid =
+    List Int
 
 
 type alias Block =
@@ -182,7 +182,30 @@ update : Msg -> Game -> ( Game, Cmd Msg )
 update msg game =
     case msg of
         Init ->
-            ( game, initGame )
+            ( { game
+                | grid =
+                    [ 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    ]
+                , spawn = 1
+                , direction = Up
+              }
+            , initGame
+            )
 
         Spawn ->
             ( game, spawnBlock )
