@@ -53,37 +53,13 @@ type Direction
     | Down
     | Right
     | Up
-    | None
+    | Invalid
 
 
 type Status
     = InProgress
     | Success
     | Failure
-
-
-keyDecoder : Decode.Decoder Direction
-keyDecoder =
-    Decode.map toDirection (Decode.field "key" Decode.string)
-
-
-toDirection : String -> Direction
-toDirection string =
-    case string of
-        "ArrowLeft" ->
-            Left
-
-        "ArrowDown" ->
-            Down
-
-        "ArrowRight" ->
-            Right
-
-        "ArrowUp" ->
-            Up
-
-        _ ->
-            None
 
 
 init : () -> ( Game, Cmd Msg )
@@ -219,12 +195,16 @@ update msg game =
             ( { game | grid = addBlocksToGrid game.grid (List.singleton block) }, Cmd.none )
 
         ChangeDirection direction ->
-            ( { game
-                | direction = direction
-                , grid = collapse game.grid direction
-              }
-            , spawnBlock
-            )
+            if direction == Invalid then
+                ( game, Cmd.none )
+
+            else
+                ( { game
+                    | direction = direction
+                    , grid = collapse game.grid direction
+                  }
+                , spawnBlock
+                )
 
 
 
@@ -238,6 +218,33 @@ subscriptions _ =
 
 
 -- HELPERS
+
+
+keyDecoder : Decode.Decoder Direction
+keyDecoder =
+    Decode.map toDirection (Decode.field "key" Decode.string)
+
+
+toDirection : String -> Direction
+toDirection string =
+    case string of
+        "ArrowLeft" ->
+            Left
+
+        "ArrowDown" ->
+            Down
+
+        "ArrowRight" ->
+            Right
+
+        "ArrowUp" ->
+            Up
+
+        _ ->
+            Invalid
+
+
+
 -- newGame : Cmd msg
 -- newGame =
 --     Random.generate NewGame gridWithTwoBlocks
@@ -379,8 +386,8 @@ printDirection dir =
         Up ->
             "Up"
 
-        None ->
-            "None"
+        Invalid ->
+            "Invalid"
 
 
 
