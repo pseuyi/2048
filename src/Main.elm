@@ -210,32 +210,14 @@ update msg game =
             ( { game | grid = addBlocksToGrid game.grid (List.singleton block) }, Cmd.none )
 
         ChangeDirection direction ->
-            let
-                availableSpaces =
-                    List.length (List.filter isZero game.grid)
-
-                createdWinningBlock =
-                    List.any (\v -> v == 2048) game.grid
-            in
             if direction == Invalid || game.status == None || game.status == Failure then
                 ( game, Cmd.none )
-
-            else if availableSpaces == 0 then
-                ( { game | status = Failure }, Cmd.none )
-
-            else if createdWinningBlock == True then
-                ( { game
-                    | direction = direction
-                    , grid = collapse game.grid direction
-                    , status = Success
-                  }
-                , spawnBlock
-                )
 
             else
                 ( { game
                     | direction = direction
                     , grid = collapse game.grid direction
+                    , status = checkGameState game.grid
                   }
                 , spawnBlock
                 )
@@ -307,6 +289,25 @@ twoOrFour =
             0
             1
         )
+
+
+checkGameState : Grid -> Status
+checkGameState grid =
+    let
+        availableSpaces =
+            List.length (List.filter isZero grid)
+
+        createdWinningBlock =
+            List.any (\v -> v == 2048) grid
+    in
+    if availableSpaces == 0 then
+        Failure
+
+    else if createdWinningBlock == True then
+        Success
+
+    else
+        InProgress
 
 
 checkBlockEmpty : Block -> Bool

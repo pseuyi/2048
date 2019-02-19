@@ -5639,7 +5639,6 @@ var author$project$Main$subscriptions = function (_n0) {
 };
 var author$project$Main$Failure = {$: 'Failure'};
 var author$project$Main$InProgress = {$: 'InProgress'};
-var author$project$Main$Success = {$: 'Success'};
 var author$project$Main$Block = F2(
 	function (index, value) {
 		return {index: index, value: value};
@@ -5832,6 +5831,39 @@ var author$project$Main$addBlocksToGrid = F2(
 		return elm$core$Array$toList(
 			A3(elm$core$List$foldr, author$project$Main$insertBlock, flatGrid, normalizedBlocks));
 	});
+var author$project$Main$Success = {$: 'Success'};
+var elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var author$project$Main$checkGameState = function (grid) {
+	var createdWinningBlock = A2(
+		elm$core$List$any,
+		function (v) {
+			return v === 2048;
+		},
+		grid);
+	var availableSpaces = elm$core$List$length(
+		A2(elm$core$List$filter, author$project$Main$isZero, grid));
+	return (!availableSpaces) ? author$project$Main$Failure : (createdWinningBlock ? author$project$Main$Success : author$project$Main$InProgress);
+};
 var author$project$Main$dbl = function (n) {
 	return n * 2;
 };
@@ -6490,27 +6522,6 @@ var author$project$Main$NewBlock = function (a) {
 	return {$: 'NewBlock', a: a};
 };
 var author$project$Main$spawnBlock = A2(elm$random$Random$generate, author$project$Main$NewBlock, author$project$Main$generateBlock);
-var elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
 var author$project$Main$update = F2(
 	function (msg, game) {
 		switch (msg.$) {
@@ -6548,34 +6559,15 @@ var author$project$Main$update = F2(
 					elm$core$Platform$Cmd$none);
 			default:
 				var direction = msg.a;
-				var createdWinningBlock = A2(
-					elm$core$List$any,
-					function (v) {
-						return v === 2048;
-					},
-					game.grid);
-				var availableSpaces = elm$core$List$length(
-					A2(elm$core$List$filter, author$project$Main$isZero, game.grid));
-				return (_Utils_eq(direction, author$project$Main$Invalid) || (_Utils_eq(game.status, author$project$Main$None) || _Utils_eq(game.status, author$project$Main$Failure))) ? _Utils_Tuple2(game, elm$core$Platform$Cmd$none) : ((!availableSpaces) ? _Utils_Tuple2(
-					_Utils_update(
-						game,
-						{status: author$project$Main$Failure}),
-					elm$core$Platform$Cmd$none) : (createdWinningBlock ? _Utils_Tuple2(
+				return (_Utils_eq(direction, author$project$Main$Invalid) || (_Utils_eq(game.status, author$project$Main$None) || _Utils_eq(game.status, author$project$Main$Failure))) ? _Utils_Tuple2(game, elm$core$Platform$Cmd$none) : _Utils_Tuple2(
 					_Utils_update(
 						game,
 						{
 							direction: direction,
 							grid: A2(author$project$Main$collapse, game.grid, direction),
-							status: author$project$Main$Success
+							status: author$project$Main$checkGameState(game.grid)
 						}),
-					author$project$Main$spawnBlock) : _Utils_Tuple2(
-					_Utils_update(
-						game,
-						{
-							direction: direction,
-							grid: A2(author$project$Main$collapse, game.grid, direction)
-						}),
-					author$project$Main$spawnBlock)));
+					author$project$Main$spawnBlock);
 		}
 	});
 var author$project$Main$Init = {$: 'Init'};
