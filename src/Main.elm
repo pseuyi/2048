@@ -119,19 +119,7 @@ view game =
             ]
             [ text "new game" ]
         , h2 []
-            [ text <|
-                case game.status of
-                    InProgress ->
-                        ""
-
-                    Success ->
-                        "you won!"
-
-                    Failure ->
-                        "no more moves."
-
-                    None ->
-                        ""
+            [ text <| statusToString game.status
             ]
         , div
             [ style "background-color" "navajowhite"
@@ -211,14 +199,25 @@ update msg game =
             ( { game | grid = addBlocksToGrid game.grid (List.singleton block) }, Cmd.none )
 
         ChangeDirection direction ->
+            let
+                nextGrid =
+                    collapse game.grid direction
+
+                nextStatus =
+                    checkGameState nextGrid
+
+                nextStatusLog =
+                    statusToString nextStatus
+            in
             if direction == Invalid || game.status == None || game.status == Failure then
                 ( game, Cmd.none )
 
             else
+                --  Debug.log nextStatusLog
                 ( { game
                     | direction = direction
-                    , grid = collapse game.grid direction
-                    , status = checkGameState game.grid
+                    , grid = nextGrid
+                    , status = nextStatus
                   }
                 , spawnBlock
                 )
@@ -235,6 +234,22 @@ subscriptions _ =
 
 
 -- HELPERS
+
+
+statusToString : Status -> String
+statusToString status =
+    case status of
+        InProgress ->
+            ""
+
+        Success ->
+            "you won!"
+
+        Failure ->
+            "no more moves."
+
+        None ->
+            ""
 
 
 keyDecoder : Decode.Decoder Direction
