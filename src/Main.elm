@@ -3,6 +3,7 @@ module Main exposing (Game, Msg(..), init, main, subscriptions, update, view)
 import Array exposing (..)
 import Browser
 import Browser.Events
+import Debug
 import Html exposing (Html, button, div, h1, h2, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
