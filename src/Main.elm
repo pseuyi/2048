@@ -97,9 +97,9 @@ init _ =
 
 type Msg
     = Init
-    | NewGame Blocks
-    | NewBlock Block
-    | ChangeDirection Direction
+    | Setup Blocks
+    | Update Block
+    | Move Direction
 
 
 
@@ -184,40 +184,44 @@ update msg game =
                     , 0
                     , 0
                     ]
-                , direction = Up
+                , direction =
+                    Up
                 , status = InProgress
               }
             , initGame
             )
 
-        NewGame blocks ->
+        Setup blocks ->
             ( { game | grid = addBlocksToGrid game.grid blocks }
             , Cmd.none
             )
 
-        NewBlock block ->
-            ( { game | grid = addBlocksToGrid game.grid (List.singleton block) }, Cmd.none )
+        Update block ->
+            let
+                nextGrid =
+                    addBlocksToGrid game.grid
+                        (List.singleton block)
 
-        ChangeDirection direction ->
+                nextStatus =
+                    validateGame nextGrid
+            in
+            ( { game | grid = nextGrid, status = nextStatus }, Cmd.none )
+
+        Move direction ->
             let
                 nextGrid =
                     collapse game.grid direction
 
-                nextStatus =
-                    checkGameState nextGrid
-
-                nextStatusLog =
-                    statusToString nextStatus
+                noChange =
+                    nextGrid == game.grid
             in
-            if direction == Invalid || game.status == None || game.status == Failure then
+            if noChange || direction == Invalid || game.status == None || game.status == Failure then
                 ( game, Cmd.none )
 
             else
-                --  Debug.log nextStatusLog
                 ( { game
                     | direction = direction
                     , grid = nextGrid
-                    , status = nextStatus
                   }
                 , spawnBlock
                 )
@@ -229,7 +233,7 @@ update msg game =
 
 subscriptions : Game -> Sub Msg
 subscriptions _ =
-    Browser.Events.onKeyDown (Decode.map ChangeDirection keyDecoder)
+    Browser.Events.onKeyDown (Decode.map Move keyDecoder)
 
 
 
@@ -278,7 +282,7 @@ toDirection string =
 
 initGame : Cmd Msg
 initGame =
-    Random.generate NewGame initialBlocks
+    Random.generate Setup initialBlocks
 
 
 initialBlocks : Random.Generator Blocks
@@ -288,7 +292,7 @@ initialBlocks =
 
 spawnBlock : Cmd Msg
 spawnBlock =
-    Random.generate NewBlock generateBlock
+    Random.generate Update generateBlock
 
 
 twoOrFour : Random.Generator Int
@@ -307,16 +311,16 @@ twoOrFour =
         )
 
 
-checkGameState : Grid -> Status
-checkGameState grid =
+validateGame : Grid -> Status
+validateGame grid =
     let
-        availableSpaces =
-            List.length (List.filter isZero grid)
-
         createdWinningBlock =
             List.any (\v -> v == 2048) grid
+
+        noMoves =
+            (collapse grid Right == grid) && (collapse grid Down == grid) && (collapse grid Up == grid) && (collapse grid Left == grid)
     in
-    if availableSpaces == 0 then
+    if noMoves then
         Failure
 
     else if createdWinningBlock == True then
